@@ -1,0 +1,71 @@
+create table tbl_laundry_type(
+type_code char(2) not null primary key,
+type_name varchar(20) not null,
+type_manager varchar(20));
+
+insert into tbl_laundry_type values
+('10','일반세탁','정민수'),
+('20','드라이클리닝','박서연'),
+('30','특수세탁','이도현');
+
+CREATE TABLE TBL_laundry_SERVICE(
+SERVICE_CODE CHAR(5) NOT NULL PRIMARY KEY,
+SERVICE_NAME VARCHAR(30) NOT NULL,
+TYPE_CODE CHAR(2) NOT NULL,
+UNIT_PRICE INT(8) NOT NULL,
+FOREIGN KEY(TYPE_CODE) REFERENCES tbl_laundry_type(type_code));
+
+INSERT INTO TBL_laundry_SERVICE VALUES
+('L1001','티셔츠 세탁','10',5000),
+('L1002','침구 세탁','10',18000),
+('L2001','정장 상의','20',12000),
+('L2002','코트 드라이','20',22000),
+('L3001','운동화 세탁','30',15000);
+
+CREATE TABLE TBL_laundry_RECEIPT(
+RECEIPT_NO CHAR(5) NOT NULL PRIMARY KEY,
+RECEIPT_DATE CHAR(8) NOT NULL,
+SERVICE_CODE CHAR(5) NOT NULL,
+ITEM_QTY INT(2) CHECK(ITEM_QTY BETWEEN 1 AND 10) NOT NULL,
+CUSTOMER_NAME VARCHAR(20) NOT NULL,
+FOREIGN KEY(SERVICE_CODE)REFERENCES TBL_laundry_SERVICE(SERVICE_CODE));
+
+INSERT INTO TBL_laundry_RECEIPT VALUES
+('R0001','20261102','L1001',3,'김나연'),
+('R0002','20261102','L2001',2,'박준호'),
+('R0003','20261103','L1002',1,'이서윤'),
+('R0004','20261103','L3001',2,'최민재'),
+('R0005','20261104','L2002',1,'정하린'),
+('R0006','20261104','L1001',5,'한도윤'),
+('R0007','20261105','L2001',3,'윤지아'),
+('R0008','20261105','L3001',1,'오세빈');
+
+
+-- tbl_laundry_type tlt  /TBL_laundry_SERVICE tls  /TBL_laundry_RECEIPT tlr
+-- 서비스코드, 서비스명, 세탁종류, 기본요금 
+select SERVICE_CODE 서비스코드, SERVICE_NAME 서비스명, type_name 세탁종류, UNIT_PRICE 기본요금
+from TBL_laundry_SERVICE tls left outer join tbl_laundry_type tlt
+on tls.type_code = tlt.type_code;
+
+
+-- 접수일자, 접수번호, 서비스명, 세탁종류, 기본요금, 접수금액, 고객명
+select RECEIPT_date 접수일자,RECEIPT_NO 접수번호, SERVICE_NAME 서비스명, type_name 세탁종류, UNIT_PRICE 기본요금,
+sum(UNIT_PRICE*item_qty) 접수금액, customer_name 고객명
+from TBL_laundry_RECEIPT tlr left outer join TBL_laundry_SERVICE tls 
+on tlr.service_code = tls.service_code left outer join tbl_laundry_type tlt
+on tls.type_code = tlt.type_code
+group by RECEIPT_date,RECEIPT_NO
+order by RECEIPT_date,RECEIPT_NO asc;
+
+-- 종류코드, 세탁종류, 접수건수, 총접수수량, 총매출금액
+select 	tlt.type_code 종류코드, tlt.type_name 세탁종류, COUNT(item_qty) 접수건수, SUM(item_qty) 접수수량, sum(UNIT_PRICE*item_qty) 총매출
+FROM tbl_laundry_type tlt LEFT OUTER JOIN TBL_laundry_SERVICE tls 
+ON tls.type_code = tlt.type_code LEFT OUTER JOIN TBL_laundry_RECEIPT tlr
+ON tlr.service_code = tls.service_code
+GROUP BY tlt.type_code, tlt.type_name  WITH ROLLUP;
+
+select 	tlt.type_code 종류코드, tlt.type_name 세탁종류, COUNT(item_qty) 접수건수, SUM(item_qty) 접수수량, sum(UNIT_PRICE*item_qty) 총매출
+FROM tbl_laundry_type tlt LEFT OUTER JOIN TBL_laundry_SERVICE tls 
+ON tls.type_code = tlt.type_code LEFT OUTER JOIN TBL_laundry_RECEIPT tlr
+ON tlr.service_code = tls.service_code
+group by tlt.type_code, tlt.type_name;
